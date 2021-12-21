@@ -100,12 +100,28 @@ void SetGamScr (int clk, int score, int state, int dst){
     gotoxy(0, 0);
     for (int row = 0; row < 17; row++){
         for (int column = 0; column < 4; column++){
+            SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7);
             cout.width(3);
             cout << "l";
             cout.width(3);
+            switch(ObjectArray[row][column]){
+            case '$':
+                    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 6);
+                    break;
+                case '+':
+                    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),1);
+                    break;
+                case '_':
+                    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),4);
+                    break;
+                case '*':
+                    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),10);
+                    break;
+            }
             cout << ObjectArray[row][column];
         }
         cout.width(3);
+        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7);
         cout << "l";
         switch (row){
             case 2:
@@ -155,12 +171,14 @@ void ResetGL (int ML, int& score, int& time, int& state){
         int ObjectGenerator = (rand() % MAX );//generate a random number from 0 to 100
         if (ObjectGenerator < 80){
             ObjectArray[0][column] = ' ';
-        }else if (ObjectGenerator >= 80 && ObjectGenerator < 94){
+        }else if (ObjectGenerator >= 80 && ObjectGenerator < 90){
             ObjectArray[0][column] = '$';
-        }else if (ObjectGenerator >= 94 && ObjectGenerator < 97){
+        }else if (ObjectGenerator >= 90 && ObjectGenerator < 94){
             ObjectArray[0][column] = '+';
-        }else if (ObjectGenerator >= 97 && ObjectGenerator <= 100){
+        }else if (ObjectGenerator >= 94 && ObjectGenerator < 97){
             ObjectArray[0][column] = '*';
+        }else if(ObjectGenerator >= 97 && ObjectGenerator <= 100){
+            ObjectArray[0][column] = '_';
         }
     }
     if (state > 0){
@@ -168,6 +186,14 @@ void ResetGL (int ML, int& score, int& time, int& state){
     }else{
         if (ObjectArray[16][ML] == '$') score ++;
     }
+    if (time <= 3){
+        if(ObjectArray[16][ML] == '_')
+            time = 0;
+    }else{
+        if(ObjectArray[16][ML] == '_')
+            time -= 3;
+    }
+
 
     if(ObjectArray[16][ML] == '+') time++;
     if(ObjectArray[16][ML] == '*'){
@@ -183,3 +209,8 @@ void gotoxy(int xpos, int ypos)
   scrn.X = xpos; scrn.Y = ypos;
   SetConsoleCursorPosition(hOuput,scrn);
 }
+
+
+
+
+
