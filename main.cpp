@@ -1,62 +1,113 @@
 #include <iostream>
-#include <fstream>
-#include <string>
 #include<iomanip>
-#include<cstdlib>
 #include<windows.h>
-
-
+#include<conio.h>
+#include <chrono>
 
 using namespace std;
 
-string GLine[18];
-const int NumGLine = 17;
+int MAX = 100;
+const int ObjectNumber = 5;
 
 
-void ResetGL (int GSpeed);
-void SetGamScr (int clk, int& score, int state);
-void ReadMap(ifstream& inStream);
+char ObjectArray [18][ObjectNumber];
+
+//void ResetGL (int, int&);
+void InitializeGame();
+void gotoxy(int xpos, int ypos);
+void SetGamScr (int clk, int score, int state, int dst);
+void ResetGL (int ML, int& score, int& time, int& state);
 
 int main()
 {
-    ifstream Map;
-    Map.open("GameMap.txt");
-    if ( Map.fail( ) ){
-        cout << "Input file opening failed.\n";
-        exit(1);
+    HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
+    CONSOLE_CURSOR_INFO CursorInfo;
+    GetConsoleCursorInfo(handle, &CursorInfo);
+    CursorInfo.bVisible = false;
+    SetConsoleCursorInfo(handle, &CursorInfo); // hide mouse
+
+    srand(time(NULL)); // set random time
+    int GSpeed = 500, Clock = 30, Score = 0, MouseLocation = 0, DST = 0; //GSpeed = GameSpeed, DST = Double Score Remain Time
+    double Clk = 0.0;
+    int PsState = 0;
+
+    InitializeGame();//create the road for the game
+    while (Clock >= 0){
+        auto start = chrono::steady_clock::now(); //start timer
+        SetGamScr (Clock, Score, PsState, DST);
+        ResetGL(MouseLocation, Score, Clock, DST);
+        if (kbhit()){//detect if any key is press
+            char input = getch(); //get the pressed ked;
+            switch (input){
+                case 'a':
+                    if(MouseLocation - 1 >= 0){
+                        MouseLocation -= 1;
+                    }
+                    break;
+                case 'd':
+                    if(MouseLocation + 1 <= 3){
+                        MouseLocation += 1;
+                    }
+                    break;
+            }
+            ResetGL(MouseLocation, Score, Clock, DST);
+            SetGamScr (Clock, Score, PsState, DST);
+        }
+        //ResetGL(MouseLocation, Score, Clock, DST);//reset the screen;
+        if (DST > 0 ){
+            PsState = 1;
+        }else{
+            PsState = 0;
+        }
+        Sleep(GSpeed);
+        GSpeed *= 0.98;//increase game speed
+        auto end = chrono::steady_clock::now();//end timer
+
+        Clk += chrono::duration_cast<chrono::milliseconds>(end - start).count(); // get timer's time
+        if (Clk >= 1000 ){
+            Clock--;
+            Clk = 0;
+            if (DST >= 1){
+                DST--;
+            }
+        }
     }
-    int GSpeed = 1000, Clock = 60, Score = 0;
-    enum State {Normal, X2, Slow} ;
-    State PsState = Normal;
-    ReadMap(Map);
-    Map.close();
-
-    for (double Clk = 60; Clk >= 0; Clk--){
-        Clock = Clk;
-        SetGamScr (Clock, Score, PsState);
-        GSpeed -= (10 * (60 - Clock));
-        ResetGL(GSpeed);
-        Sleep(1000);
-
-    }
-
-
+    return 0;
 }
 
-
-void ReadMap(ifstream& inStream){
-    for (int i = 0; i  < NumGLine; i++ ){
-        getline(inStream, GLine[i]);
+void InitializeGame(){
+    for (int row = 0; row < 16; row++){
+        for (int column = 0; column < 4; column++){
+            int ObjectGenerator = (rand() % 100);
+            if (ObjectGenerator < 80){
+                ObjectArray[row][column] = ' ';
+            }else if (ObjectGenerator >= 80 && ObjectGenerator < 94){
+                ObjectArray[row][column] = '$';
+            }else if (ObjectGenerator >= 94 && ObjectGenerator < 97){
+                ObjectArray[row][column] = '+';
+            }else if (ObjectGenerator >= 97 && ObjectGenerator <= 100){
+                ObjectArray[row][column] = '*';
+            }
+        }
     }
-    inStream.close();
+    for (int column = 0; column < 4; column++){
+    ObjectArray[16][column] = ' ';
+    }
+    ObjectArray[16][0] = '@';
 }
 
-
-void SetGamScr (int clk, int& score, int state){
-    system("cls");
-    for (int i = 0; i  < NumGLine; i++ ){
-        cout <<GLine[i];
-        switch (i){
+void SetGamScr (int clk, int score, int state, int dst){
+    gotoxy(0, 0);
+    for (int row = 0; row < 17; row++){
+        for (int column = 0; column < 4; column++){
+            cout.width(3);
+            cout << "l";
+            cout.width(3);
+            cout << ObjectArray[row][column];
+        }
+        cout.width(3);
+        cout << "l";
+        switch (row){
             case 2:
                 cout <<setw(9) <<"Time: "<<endl;
                 break;
@@ -76,7 +127,7 @@ void SetGamScr (int clk, int& score, int state){
                 if (state == 0 ){
                     cout <<setw(9) <<"Normal" <<endl;
                 }else if (state == 1){
-                    cout <<setw(15) <<"Double Score" <<endl;
+                    cout <<setw(16) <<"Double Score " <<dst<<endl;
                 }else if (state == 2){
                     cout <<setw(14) <<"Slow Motion" <<endl;
                 }
@@ -85,17 +136,50 @@ void SetGamScr (int clk, int& score, int state){
                 cout << endl;
         }
     }
+
 }
 
-void ResetGL (int Speed){
-    GLine[17] = GLine[16];
-    for(int i = 16; i > 0 ; i--){
-        GLine[i] = GLine[i-1];
+void ResetGL (int ML, int& score, int& time, int& state){
+    for (int column = 0; column < 4; column++){
+        ObjectArray[18][column] = ObjectArray[16][column];
     }
-    GLine[0] = GLine[17];
+    for (int row = 16; row > 0; row--){
+        for (int column = 0; column < 4; column++){
+            ObjectArray[row][column] = ObjectArray[row - 1][column];
+        }
+    }
+    for (int column = 0; column < 4; column++){
+        ObjectArray[0][column] = ObjectArray[18][column];
+    }
+    for (int column = 0; column < 4; column++){
+        int ObjectGenerator = (rand() % MAX );//generate a random number from 0 to 100
+        if (ObjectGenerator < 80){
+            ObjectArray[0][column] = ' ';
+        }else if (ObjectGenerator >= 80 && ObjectGenerator < 94){
+            ObjectArray[0][column] = '$';
+        }else if (ObjectGenerator >= 94 && ObjectGenerator < 97){
+            ObjectArray[0][column] = '+';
+        }else if (ObjectGenerator >= 97 && ObjectGenerator <= 100){
+            ObjectArray[0][column] = '*';
+        }
+    }
+    if (state > 0){
+        if (ObjectArray[16][ML] == '$') score += 2;
+    }else{
+        if (ObjectArray[16][ML] == '$') score ++;
+    }
+
+    if(ObjectArray[16][ML] == '+') time++;
+    if(ObjectArray[16][ML] == '*'){
+        state += 5;
+    }
+    ObjectArray[16][ML] = '@';
 }
 
-
-
-
-
+void gotoxy(int xpos, int ypos)
+{
+  COORD scrn;
+  HANDLE hOuput = GetStdHandle(STD_OUTPUT_HANDLE);
+  scrn.X = xpos; scrn.Y = ypos;
+  SetConsoleCursorPosition(hOuput,scrn);
+}
