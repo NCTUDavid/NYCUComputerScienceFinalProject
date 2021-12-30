@@ -16,7 +16,9 @@ char ObjectArray [18][ObjectNumber];
 void InitializeGame();
 void gotoxy(int xpos, int ypos);
 void SetGamScr (int clk, int score, int state, int dst);
-void ResetGL (int ML, int& score, int& time, int& state);
+void ResetGL (int ML, int& score, int& time, int& DoubleTime, int state);
+void PointAdder (int state, int& DoubleTime, int ML, int&score, int& time);
+void gamerule();
 
 int main()
 {
@@ -26,6 +28,16 @@ int main()
     CursorInfo.bVisible = false;
     SetConsoleCursorInfo(handle, &CursorInfo); // hide mouse
 
+    gamerule();
+
+    char yes;
+    cin >> yes ;
+
+    while (yes != 'y'){
+        cout << "enter y !!!!!" << endl;
+        cin >> yes;
+    }
+    system("cls");
     srand(time(NULL)); // set random time
     int GSpeed = 500, Clock = 30, Score = 0, MouseLocation = 0, DST = 0; //GSpeed = GameSpeed, DST = Double Score Remain Time
     double Clk = 0.0;
@@ -35,9 +47,10 @@ int main()
     while (Clock >= 0){
         auto start = chrono::steady_clock::now(); //start timer
         SetGamScr (Clock, Score, PsState, DST);
-        ResetGL(MouseLocation, Score, Clock, DST);
+        ResetGL(MouseLocation, Score, Clock, DST, PsState);
         if (kbhit()){//detect if any key is press
             char input = getch(); //get the pressed ked;
+            int tmp = MouseLocation;
             switch (input){
                 case 'a':
                     if(MouseLocation - 1 >= 0){
@@ -50,16 +63,41 @@ int main()
                     }
                     break;
             }
-            ResetGL(MouseLocation, Score, Clock, DST);
+            ObjectArray[16][tmp] = ' ';
+            ObjectArray[16][MouseLocation] = '@';
+            PointAdder(PsState, DST, MouseLocation, Score, Clock);
             SetGamScr (Clock, Score, PsState, DST);
-        }
+            /*
+            if (PsState > 0){
+                if (ObjectArray[16][MouseLocation] == '$')
+                    Score += 2;
+            }else{
+                if (ObjectArray[16][MouseLocation] == '$')
+                    Score ++;
+            }
+            if (time <= 3){
+                if(ObjectArray[16][MouseLocation] == '_')
+                    time = 0;
+            }else{
+                if(ObjectArray[16][MouseLocation] == '_')
+                    time -= 3;
+            }
+
+            if(ObjectArray[16][MouseLocation] == '+')
+                time++;
+            if(ObjectArray[16][MouseLocation] == '*'){
+                state += 5;
+            }
+        */
         //ResetGL(MouseLocation, Score, Clock, DST);//reset the screen;
+        }
         if (DST > 0 ){
             PsState = 1;
         }else{
             PsState = 0;
         }
         Sleep(GSpeed);
+        //Sleep(500);
         GSpeed *= 0.98;//increase game speed
         auto end = chrono::steady_clock::now();//end timer
 
@@ -72,6 +110,26 @@ int main()
             }
         }
     }
+    system("cls");
+    cout << endl;
+    cout << "END" << endl;
+    cout << endl;
+    cout << "Your score is :" << Score << endl;
+    cout << endl;
+
+    if(Score <= 20)
+    {
+        cout << "Please work harder." << endl;
+    }
+    else if (Score>20 && Score <=50)
+    {
+        cout << "acceptable" << endl;
+    }
+    else
+    {
+        cout << "good" << endl;
+    }
+
     return 0;
 }
 
@@ -98,6 +156,7 @@ void InitializeGame(){
 
 void SetGamScr (int clk, int score, int state, int dst){
     gotoxy(0, 0);
+    //system("cls");
     for (int row = 0; row < 17; row++){
         for (int column = 0; column < 4; column++){
             SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7);
@@ -141,9 +200,9 @@ void SetGamScr (int clk, int score, int state, int dst){
                 break;
             case 9:
                 if (state == 0 ){
-                    cout <<setw(9) <<"Normal" <<endl;
+                    cout <<setw(10) <<"Normal " << "  " <<endl;
                 }else if (state == 1){
-                    cout <<setw(16) <<"Double Score " <<dst<<endl;
+                    cout <<setw(10) <<"Double " <<dst <<endl;
                 }else if (state == 2){
                     cout <<setw(14) <<"Slow Motion" <<endl;
                 }
@@ -155,7 +214,7 @@ void SetGamScr (int clk, int score, int state, int dst){
 
 }
 
-void ResetGL (int ML, int& score, int& time, int& state){
+void ResetGL (int ML, int& score, int& time, int& DoubleTime, int state){
     for (int column = 0; column < 4; column++){
         ObjectArray[18][column] = ObjectArray[16][column];
     }
@@ -181,6 +240,42 @@ void ResetGL (int ML, int& score, int& time, int& state){
             ObjectArray[0][column] = '_';
         }
     }
+    /*
+    if (state > 0){
+            if (ObjectArray[16][ML] == '$') score += 2;
+    }else{
+        if (ObjectArray[16][ML] == '$') score ++;
+    }
+        if (ObjectArray[16][ML] == '$') score += 2;
+    }else{
+        if (ObjectArray[16][ML] == '$') score ++;
+    }
+    if (time <= 3){
+        if(ObjectArray[16][ML] == '_')
+            time = 0;
+    }else{
+        if(ObjectArray[16][ML] == '_')
+            time -= 3;
+    }
+}
+    if(ObjectArray[16][ML] == '+') time++;
+    if(ObjectArray[16][ML] == '*'){
+        state += 5;
+    }
+    */
+    PointAdder (state, DoubleTime, ML, score, time);
+    ObjectArray[16][ML] = '@';
+}
+
+void gotoxy(int xpos, int ypos)
+{
+  COORD scrn;
+  HANDLE hOuput = GetStdHandle(STD_OUTPUT_HANDLE);
+  scrn.X = xpos; scrn.Y = ypos;
+  SetConsoleCursorPosition(hOuput,scrn);
+}
+
+void PointAdder (int state, int& DoubleTime, int ML, int&score, int& time){
     if (state > 0){
         if (ObjectArray[16][ML] == '$') score += 2;
     }else{
@@ -193,24 +288,40 @@ void ResetGL (int ML, int& score, int& time, int& state){
         if(ObjectArray[16][ML] == '_')
             time -= 3;
     }
-
-
     if(ObjectArray[16][ML] == '+') time++;
     if(ObjectArray[16][ML] == '*'){
-        state += 5;
+        DoubleTime += 5;
     }
-    ObjectArray[16][ML] = '@';
 }
 
-void gotoxy(int xpos, int ypos)
+void gamerule()
 {
-  COORD scrn;
-  HANDLE hOuput = GetStdHandle(STD_OUTPUT_HANDLE);
-  scrn.X = xpos; scrn.Y = ypos;
-  SetConsoleCursorPosition(hOuput,scrn);
+    int i;
+
+    cout << " " << "遊戲規則說明:" << endl;
+    cout << endl;
+
+    cout << " " << "1.利用 A D 鍵操控你的角色 @ 左右移動" << endl;
+    cout << " " << "2.$是金幣，用 @ 吃到一個就可以得一分" << endl;
+    cout << " " << "3.遊戲時間30秒" << endl;
+    cout << endl;
+
+    cout << " " << "特殊道具介紹:" << endl;
+    cout << endl;
+    cout << " " << "+" << " " << ":" << " " << "遊戲時間增加一秒" << endl;
+    cout << " " << "*" << " " << ":" << " " << "接下來五秒鐘一個 $ 可以得兩分" << endl;
+
+    cout << endl;
+
+
+
+    cout << "Press y and enter to start" << endl;
+
+    for(i=1;i<=20;i++)
+    {
+    cout << "." << " ";
+    }
 }
-
-
 
 
 
